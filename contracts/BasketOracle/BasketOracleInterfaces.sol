@@ -3,8 +3,19 @@ pragma solidity ^0.8.0;
 import "../Liquidator/OpenZeppelinInterfaces.sol";
 
 // Basket
-interface IExperiPie is IERC20 {
+interface IBasketFacet is IERC20 {
     function getTokens() external view returns (address[] memory);
+}
+
+// Lending Registry
+interface ILendingRegistry {
+    function wrappedToProtocol(address _wrapped) external view returns (bytes32);
+    function wrappedToUnderlying(address _wrapped) external view returns (address);
+}
+
+// Lending Logic
+interface ILendingLogic {
+    function exchangeRateView(address _wrapped) external view returns(uint256);
 }
 
 // Link v1/v3 aggregator
