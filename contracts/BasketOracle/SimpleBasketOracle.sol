@@ -35,26 +35,20 @@ contract SimpleBasketOracle is Ownable {
                 linkFeed = linkFeeds[underlying];
 
                 marketCapUSD += (
-                    componentToken.balanceOf(address(basket)) *
-                    lendingLogic.exchangeRateView(component) /
-                    1 ether *
-                    (10 ** (18 - componentToken.decimals())) * // Scale token balance decimals to always be 1e18
-                    uint256(linkFeed.latestAnswer()) /
-                    (10 ** (linkFeed.decimals()))
+                    fmul(componentToken.balanceOf(address(basket)), lendingLogic.exchangeRateView(component), 1 ether) *
+                    fmul(10 ** (18 - componentToken.decimals()), uint256(linkFeed.latestAnswer()), 10 ** linkFeed.decimals())
                 );
             } else { // Non-wrapped tokens
                 linkFeed = linkFeeds[component];
 
                 marketCapUSD += (
                     componentToken.balanceOf(address(basket)) *
-                    (10 ** (18 - componentToken.decimals())) * // Scale token balance decimals to always be 1e18
-                    uint256(linkFeed.latestAnswer()) /
-                    (10 ** linkFeed.decimals())
+                    fmul(10 ** (18 - componentToken.decimals()), uint256(linkFeed.latestAnswer()), 10 ** linkFeed.decimals())
                 );
             }
         }
 
-        usdPrice = marketCapUSD * 1 ether / basket.totalSupply();
+        usdPrice = fdiv(marketCapUSD, basket.totalSupply(), 1 ether);
         return usdPrice;
     }
 
@@ -64,5 +58,27 @@ contract SimpleBasketOracle is Ownable {
 
     function removeTokenFeed(address _token) external onlyOwner {
         delete linkFeeds[_token];
+    }
+
+    function fmul(
+        uint256 x,
+        uint256 y,
+        uint256 baseUnit
+    ) internal pure returns (uint256 z) {
+        assembly {
+            if iszero(eq(div(mul(x,y),x),y)) {revert(0,0)}
+            z := div(mul(x,y),baseUnit)
+        }
+    }
+
+    function fdiv(
+        uint256 x,
+        uint256 y,
+        uint256 baseUnit
+    ) internal pure returns (uint256 z) {
+        assembly {
+            if iszero(eq(div(mul(x,baseUnit),x),baseUnit)) {revert(0,0)}
+            z := div(mul(x,baseUnit),y)
+        }
     }
 }
